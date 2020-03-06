@@ -6,22 +6,33 @@ import pandas as pd
 # How much earlier a detection can be with respect to a real outbreak
 DETECTION_THRESH = 4  # months
 
+FILENAME_OUTBREAKS = 'List of Admin Units.xlsx'
 
-def generate_fake_risk(n_steps: int, rs: np.random.RandomState, p0: float = 0.5) -> array:
+
+def generate_fake_risk(rs: np.random.RandomState, start_date: str, end_date: str, p0: float = 0.5) -> pd.DataFrame:
     """
     Generate fake risk data that goes between 0 and 1 with a random walk
-    :param n_steps: the number of steps to take
     :param rs: a Numpy random state
+    :param start_date: start date string formatted 'YY-mm'
+    :param end_date: end date string formatted 'YY-mm'
     :param p0: the probability of step size 0. The probability of step size -1 / 1 will then be (1-p0)/2
-    :return: an array
+    :return: dataframe with month and risk columns
     """
+    # Make dataframe with dates
+    df_risk = pd.DataFrame({'date': pd.date_range(start=start_date, end=end_date, freq='M').to_period('M')})
     # Create the steps
-    steps = rs.choice(a=[-1, 0, 1], size=n_steps, p=[(1 - p0) / 2, p0, (1 - p0) / 2])
+    steps = rs.choice(a=[-1, 0, 1], size=len(df_risk)-1, p=[(1 - p0) / 2, p0, (1 - p0) / 2])
     # Compute the path values based on the steps
     path = np.concatenate([[0], steps]).cumsum(0)
     # Normalize between 0 and 1
-    path = (path - min(path)) / (max(path) - min(path))
-    return path
+    df_risk['risk'] = (path - min(path)) / (max(path) - min(path))
+    return df_risk
+
+
+def get_outbreaks(sheet_name='Outbreaks_Zimbabwe'):
+    df_outbreaks = pd.read_excel(FILENAME_OUTBREAKS, sheet_name=sheet_name)
+    df_outbreaks['Outbreak month'] = df_outbreaks['Outbreak date'].dt.to_period('M')
+    return df_outbreaks
 
 
 def get_detections(risk: array, threshold: float) -> array:
@@ -98,4 +109,6 @@ def calculate_f1(df: pd.DataFrame) -> pd.DataFrame:
     # Only calc F1 if precision and recall are > 0 to avoid division by 0 error
     idx = (df['precision'] > 0) & (df['recall'] > 0)
     df.loc[idx, 'f1'] = df[idx].apply(lambda x: 2 / (1 / x['precision'] + 1 / x['recall']), axis=1)
-    return df
+
+    # Put nans back to 0
+    return df.fillna(0)
