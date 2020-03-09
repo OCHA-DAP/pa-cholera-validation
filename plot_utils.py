@@ -11,7 +11,7 @@ def plot_risk(risk, threshold, real_outbreaks, admin2_pcode):
     ax.plot(risk)
     ax.axhline(threshold, c='k')
     for i, d in enumerate(detections):
-        ax.axvline(x=d, c='y', label="detections" if i == 0 else None)
+        ax.axvline(x=d, lw=2, alpha=0.5, c='y', label="detections" if i == 0 else None)
     for i, r in enumerate(real_outbreaks):
         ax.axvline(x=r, c='r', label="outbreaks" if i == 0 else None)
     ax.set_ylabel('risk')

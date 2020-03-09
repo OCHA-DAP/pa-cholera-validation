@@ -33,7 +33,7 @@ def main():
         df_risk['outbreak'] = df_risk['date'].isin(df_outbreak['Outbreak month'])
         real_outbreaks = df_risk[df_risk['outbreak']].index.values
         # Make plot for threshold 0.5
-        plot_utils.plot_risk(df_risk['risk'], 0.5, real_outbreaks, admin2_pcode)
+        plot_utils.plot_risk(df_risk['risk'], 0.2, real_outbreaks, admin2_pcode)
         # Get detections per threshold
         df = utils.loop_over_thresholds(df_risk['risk'], real_outbreaks)
         df = utils.calculate_f1(df)
