@@ -10,13 +10,14 @@ def plot_risk(risk, threshold, real_outbreaks, admin2_pcode):
     fig, ax = plt.subplots()
     ax.plot(risk)
     ax.axhline(threshold, c='k')
-    for d in detections:
-        ax.axvline(x=d, c='y')
-    for r in real_outbreaks:
-        ax.axvline(x=r, c='r')
+    for i, d in enumerate(detections):
+        ax.axvline(x=d, c='y', label="detections" if i == 0 else None)
+    for i, r in enumerate(real_outbreaks):
+        ax.axvline(x=r, c='r', label="outbreaks" if i == 0 else None)
     ax.set_ylabel('risk')
     ax.set_xlabel('month')
     ax.set_ylim(0, 1)
+    ax.legend()
     fig.savefig(f'{PLOT_DIR}/risk_{admin2_pcode}.png')
     plt.close(fig)
 

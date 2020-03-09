@@ -10,7 +10,9 @@ pip install -r requirements.txt
 ```
 
 ## Running
-* Download "List of Admin Units.xlsx" from Google drive and put it in the top-level directory
+* Download "List of Admin Units.xlsx" from Google drive,
+ and "zimbabwe_final.xlsx" from Moiz's email, 
+ and put them in the top-level directory
 * Execute:
 ```bash
 python main.py
