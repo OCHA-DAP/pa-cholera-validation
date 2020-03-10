@@ -6,6 +6,7 @@ PLOT_DIR = "plots"
 
 
 def plot_risk(risk, threshold, real_outbreaks, admin2_pcode):
+    # TODO:add date and not only the #month
     detections = utils.get_detections(risk, threshold)
     fig, ax = plt.subplots()
     ax.plot(risk)
