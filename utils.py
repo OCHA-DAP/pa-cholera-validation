@@ -5,6 +5,7 @@ import pandas as pd
 
 # How much earlier a detection can be with respect to a real outbreak
 DETECTION_THRESH = 4  # months
+RISK_THRESH = 0.5     # value for the example and the overall evaluation
 
 FILENAME_OUTBREAKS = 'List of Admin Units.xlsx'
 
@@ -34,6 +35,10 @@ def get_outbreaks(sheet_name='Outbreaks_Zimbabwe'):
     df_outbreaks['Outbreak month'] = df_outbreaks['Outbreak date'].dt.to_period('M')
     return df_outbreaks
 
+def get_adm2shortlist(sheet_name='Proposed Shortlist'):
+    df_adm2 = pd.read_excel(FILENAME_OUTBREAKS, sheet_name=sheet_name)
+    adm2shortlist=zip(df_adm2.loc[:,'admin2Pcode'].values,df_adm2.loc[:,'admin2Name_en'].values)
+    return adm2shortlist
 
 def get_detections(risk: array, threshold: float) -> array:
     """
@@ -108,7 +113,7 @@ def calculate_f1(df: pd.DataFrame) -> pd.DataFrame:
 
     # Only calc F1 if precision and recall are > 0 to avoid division by 0 error
     idx = (df['precision'] > 0) & (df['recall'] > 0)
-    df.loc[idx, 'f1'] = df[idx].apply(lambda x: 2 / (1 / x['precision'] + 1 / x['recall']), axis=1)
+    # df.loc[idx, 'f1'] = df[idx].apply(lambda x: 2 / (1 / x['precision'] + 1 / x['recall']), axis=1)
 
     # Put nans back to 0
     return df.fillna(0)
