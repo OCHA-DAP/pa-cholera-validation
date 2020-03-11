@@ -18,7 +18,10 @@ def plot_risk(df_risk, real_outbreaks, admin2_pcode,ax):
     ax.axhline(RISK_THRESH, c='gray',ls='--')
     for i, d in enumerate(detections):
         ax.axvline(x=d, lw=2, alpha=0.5, c='y', label="detections" if i == 0 else None)
-        ax.fill_between(range(d,d+DETECTION_THRESH),risk[d:d+DETECTION_THRESH],alpha=0.5, color='y')
+        try:
+            ax.fill_between(range(d,d+DETECTION_THRESH),risk[d:d+DETECTION_THRESH],alpha=0.5, color='y')
+        except:
+            ax.fill_between(range(d,len(risk)),risk[d:len(risk)],alpha=0.5, color='y')
     for i, r in enumerate(real_outbreaks):
         ax.axvline(x=r, c='r', label="outbreaks" if i == 0 else None)
     ax.set_ylabel('risk')
@@ -45,7 +48,7 @@ def plot_map(admin2_pcode,fig,ax):
     zwe_boundaries.boundary.plot(ax=ax)
     adm2_boundary=zwe_boundaries[zwe_boundaries['ADM2_PCODE']==admin2_pcode]
     adm2_boundary.plot(ax=ax,color='red')
-    fig.suptitle('{} - {}'.format(adm2_boundary.iloc[0]['ADM1_EN'],adm2_boundary.iloc[0]['ADM2_EN']))
+    fig.suptitle('{} - {}'.format(adm2_boundary.iloc[0]['ADM1_EN'],adm2_boundary.iloc[0]['ADM2_EN']),fontsize=30)
 
 def plot_confusion_matrix(df, ax):
     ax.axis('off')
@@ -58,7 +61,7 @@ def plot_confusion_matrix(df, ax):
 
 
 def plot_adm2(df_risk,df_performance, real_outbreaks, admin2_pcode,admin2_name):
-    fig, axs = plt.subplots(2,2,figsize=(15,15))
+    fig, axs = plt.subplots(2,2,figsize=(25,15))
     # top left: map
     plot_map(admin2_pcode,fig,ax=axs[0,0])
     # top right: risk
