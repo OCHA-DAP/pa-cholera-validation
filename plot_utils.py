@@ -9,8 +9,9 @@ from utils import DETECTION_THRESH, RISK_THRESH
 PLOT_DIR = "plots"
 
 
-def plot_risk(risk, real_outbreaks, admin2_pcode,ax):
+def plot_risk(df_risk, real_outbreaks, admin2_pcode,ax):
     # TODO:add date and not only the #month
+    risk=df_risk['risk']
     detections = utils.get_detections(risk, RISK_THRESH)
     # fig, ax = plt.subplots()
     ax.plot(risk,lw=3)
@@ -56,16 +57,16 @@ def plot_confusion_matrix(df, ax):
     the_table.scale(1.2,1.7)
 
 
-def plot_adm2(risk,df_performance, real_outbreaks, admin2_pcode):
+def plot_adm2(df_risk,df_performance, real_outbreaks, admin2_pcode,admin2_name):
     fig, axs = plt.subplots(2,2,figsize=(15,15))
     # top left: map
     plot_map(admin2_pcode,fig,ax=axs[0,0])
     # top right: risk
-    plot_risk(risk, real_outbreaks, admin2_pcode,ax=axs[0,1])
+    plot_risk(df_risk, real_outbreaks, admin2_pcode,ax=axs[0,1])
     # bottom right: precision/recall
     plot_confusion_matrix(df_performance, ax=axs[1,0])
     # bottom right: precision/recall
     plot_performance(df_performance, ax=axs[1,1])
-    fig.savefig(f'{PLOT_DIR}/{admin2_pcode}.png')
+    fig.savefig(f'{PLOT_DIR}/{admin2_pcode}_{admin2_name}.png')
     plt.close(fig)
     # plt.show()

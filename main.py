@@ -38,15 +38,9 @@ def main():
         # Get detections per threshold
         df_performance = utils.loop_over_thresholds(df_risk['risk'], real_outbreaks)
         df_performance = utils.calculate_f1(df_performance)
-        
-        plot_utils.plot_adm2(df_risk['risk'],df_performance, real_outbreaks, admin2_pcode)
+        plot_utils.plot_adm2(df_risk,df_performance, real_outbreaks, admin2_pcode,admin2_name)
 
         # TODO: evaluate the best threshold value and calculate the overall value of precision and recall
-        # TODO: for each ADM2 unit make a 4 panel plot with:
-        # - small map showing where the district is
-        # - risk plot with example threshold at the best threhsold value overall
-        # - precision/recall vs threshold
-        # - summary confusion matrix for the best threshold
 
 
 if __name__ == '__main__':
