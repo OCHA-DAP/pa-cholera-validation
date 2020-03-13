@@ -15,7 +15,7 @@ def main():
     # rs = np.random.RandomState(SEED)
     # Get the outbreaks, and loop through the
     df_outbreaks = utils.get_outbreaks()
-    df_risk_all = pd.read_excel(FILENAME_ZIMBABWE)
+    df_risk_all = pd.read_excel(f'input/{FILENAME_ZIMBABWE}')
     for admin2_pcode,admin2_name in utils.get_adm2shortlist():
         df_outbreak=df_outbreaks[df_outbreaks['admin2Pcode']==admin2_pcode]
         # admin2_name = df_outbreak['admin2Name_en'].iloc[0]

@@ -31,14 +31,16 @@ def generate_fake_risk(rs: np.random.RandomState, start_date: str, end_date: str
 
 
 def get_outbreaks(sheet_name='Outbreaks_Zimbabwe'):
-    df_outbreaks = pd.read_excel(FILENAME_OUTBREAKS, sheet_name=sheet_name)
+    df_outbreaks = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=sheet_name)
     df_outbreaks['Outbreak month'] = df_outbreaks['Outbreak date'].dt.to_period('M')
     return df_outbreaks
 
+
 def get_adm2shortlist(sheet_name='Proposed Shortlist'):
-    df_adm2 = pd.read_excel(FILENAME_OUTBREAKS, sheet_name=sheet_name)
+    df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=sheet_name)
     adm2shortlist=zip(df_adm2.loc[:,'admin2Pcode'].values,df_adm2.loc[:,'admin2Name_en'].values)
     return adm2shortlist
+
 
 def get_detections(risk: array, threshold: float) -> array:
     """

@@ -7,9 +7,10 @@ import matplotlib.patches as mpatches
 from utils import DETECTION_THRESH, RISK_THRESH
 
 PLOT_DIR = "plots"
+FILENAME_BOUNDARIES = 'zwe_admbnda_adm2_zimstat_ocha_20180911'
 
 
-def plot_risk(df_risk, real_outbreaks, admin2_pcode,ax):
+def plot_risk(df_risk, real_outbreaks, ax):
     # TODO:add date and not only the #month
     risk=df_risk['risk']
     detections = utils.get_detections(risk, RISK_THRESH)
@@ -35,6 +36,7 @@ def plot_risk(df_risk, real_outbreaks, admin2_pcode,ax):
     # fig.savefig(f'{PLOT_DIR}/risk_{admin2_pcode}.png')
     # plt.close(fig)
 
+
 # def plot_f1(df, admin2_pcode,ax):
 def plot_performance(df, ax):
     # fig, ax = plt.subplots()
@@ -43,12 +45,14 @@ def plot_performance(df, ax):
     # fig.savefig(f'{PLOT_DIR}/f1_{admin2_pcode}.png')
     # plt.close(fig)
 
-def plot_map(admin2_pcode,fig,ax):
-    zwe_boundaries=gpd.read_file('{}/zwe_admbnda_adm2_zimstat_ocha_20180911/zwe_admbnda_adm2_zimstat_ocha_20180911.shp'.format(os.getcwd()))
+
+def plot_map(admin2_pcode, fig, ax):
+    zwe_boundaries=gpd.read_file(f'input/{FILENAME_BOUNDARIES}/{FILENAME_BOUNDARIES}.shp')
     zwe_boundaries.boundary.plot(ax=ax)
     adm2_boundary=zwe_boundaries[zwe_boundaries['ADM2_PCODE']==admin2_pcode]
     adm2_boundary.plot(ax=ax,color='red')
     fig.suptitle('{} - {}'.format(adm2_boundary.iloc[0]['ADM1_EN'],adm2_boundary.iloc[0]['ADM2_EN']),fontsize=30)
+
 
 def plot_confusion_matrix(df, ax):
     ax.axis('off')
@@ -65,7 +69,7 @@ def plot_adm2(df_risk,df_performance, real_outbreaks, admin2_pcode,admin2_name):
     # top left: map
     plot_map(admin2_pcode,fig,ax=axs[0,0])
     # top right: risk
-    plot_risk(df_risk, real_outbreaks, admin2_pcode,ax=axs[0,1])
+    plot_risk(df_risk, real_outbreaks, axs[0,1])
     # bottom right: precision/recall
     plot_confusion_matrix(df_performance, ax=axs[1,0])
     # bottom right: precision/recall
