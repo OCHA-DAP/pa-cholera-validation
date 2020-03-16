@@ -6,8 +6,17 @@ import pandas as pd
 # How much earlier a detection can be with respect to a real outbreak
 DETECTION_THRESH = 4  # months
 RISK_THRESH = 0.5     # value for the example and the overall evaluation
+THRESHOLD_STEP = 0.05
 
 FILENAME_OUTBREAKS = 'List of Admin Units.xlsx'
+
+
+def get_df_performance_all(threshold_step: float = THRESHOLD_STEP) -> pd.DataFrame:
+    df_risk_all = pd.DataFrame({
+        'thresh': np.arange(0, 1 + threshold_step, threshold_step),
+        'TP': 0, 'FP': 0, 'FN': 0
+    })
+    return df_risk_all
 
 
 def generate_fake_risk(rs: np.random.RandomState, start_date: str, end_date: str, p0: float = 0.5) -> pd.DataFrame:
@@ -30,16 +39,34 @@ def generate_fake_risk(rs: np.random.RandomState, start_date: str, end_date: str
     return df_risk
 
 
-def get_outbreaks(sheet_name='Outbreaks_Zimbabwe'):
+def get_outbreaks(sheet_name: str = 'Outbreaks_Zimbabwe') -> pd.DataFrame:
+    """
+    Get a dataframe with the outbreaks for a country. Create a column containing the outbreak month.
+    :param sheet_name: The name of the sheet in the excel file
+    :return: dataframe with outbreaks
+    """
     df_outbreaks = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=sheet_name)
     df_outbreaks['Outbreak month'] = df_outbreaks['Outbreak date'].dt.to_period('M')
     return df_outbreaks
 
 
-def get_adm2shortlist(sheet_name='Proposed Shortlist'):
+def get_adm2_shortlist(sheet_name: str = 'Proposed Shortlist') -> array:
+    """
+    Get shortlist of admin 2 regions for cholera outbreaks
+    :param sheet_name: The name of the sheet in the excel file
+    :return: array with [[admin2 pcode, admin2 english name]]
+    """
     df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=sheet_name)
-    adm2shortlist=zip(df_adm2.loc[:,'admin2Pcode'].values,df_adm2.loc[:,'admin2Name_en'].values)
-    return adm2shortlist
+    adm2_shortlist = df_adm2[['admin2Pcode', 'admin2Name_en']].values
+    return adm2_shortlist
+
+
+def get_risk_df(df_risk_all: pd.DataFrame, admin2_name: str) -> pd.DataFrame:
+    df_risk = df_risk_all[df_risk_all['adm2'] == admin2_name].drop(columns=['adm2']).T.reset_index()
+    df_risk.columns = ['date', 'risk']
+    # TODO: NOT URGENT keep the date to look for the 4 months window. The risk date is the first day of the month
+    df_risk['date'] = df_risk['date'].dt.to_period('M')
+    return df_risk
 
 
 def get_detections(risk: array, threshold: float) -> array:
@@ -84,7 +111,7 @@ def validate_detections(detections: array, real_outbreaks: array) -> pd.DataFram
     return df[['TP', 'FP', 'FN']].apply(sum)
 
 
-def loop_over_thresholds(risk: array, real_outbreaks: array, threshold_step: float = 0.05) -> pd.DataFrame:
+def loop_over_thresholds(risk: array, real_outbreaks: array, threshold_step: float = THRESHOLD_STEP) -> pd.DataFrame:
     """
     For a given threshold step, loop over thresholds from 0 to 1 and calculate TP, FP and FN
     :param risk: array of risk over time
@@ -115,7 +142,7 @@ def calculate_f1(df: pd.DataFrame) -> pd.DataFrame:
 
     # Only calc F1 if precision and recall are > 0 to avoid division by 0 error
     idx = (df['precision'] > 0) & (df['recall'] > 0)
-    # df.loc[idx, 'f1'] = df[idx].apply(lambda x: 2 / (1 / x['precision'] + 1 / x['recall']), axis=1)
+    df.loc[idx, 'f1'] = df[idx].apply(lambda x: 2 / (1 / x['precision'] + 1 / x['recall']), axis=1)
 
     # Put nans back to 0
     return df.fillna(0)
