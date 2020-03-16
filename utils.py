@@ -30,16 +30,34 @@ def generate_fake_risk(rs: np.random.RandomState, start_date: str, end_date: str
     return df_risk
 
 
-def get_outbreaks(sheet_name='Outbreaks_Zimbabwe'):
+def get_outbreaks(sheet_name: str = 'Outbreaks_Zimbabwe') -> pd.DataFrame:
+    """
+    Get a dataframe with the outbreaks for a country. Create a column containing the outbreak month.
+    :param sheet_name: The name of the sheet in the excel file
+    :return: dataframe with outbreaks
+    """
     df_outbreaks = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=sheet_name)
     df_outbreaks['Outbreak month'] = df_outbreaks['Outbreak date'].dt.to_period('M')
     return df_outbreaks
 
 
-def get_adm2shortlist(sheet_name='Proposed Shortlist'):
+def get_adm2_shortlist(sheet_name: str = 'Proposed Shortlist') -> array:
+    """
+    Get shortlist of admin 2 regions for cholera outbreaks
+    :param sheet_name: The name of the sheet in the excel file
+    :return: array with [[admin2 pcode, admin2 english name]]
+    """
     df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=sheet_name)
-    adm2shortlist=zip(df_adm2.loc[:,'admin2Pcode'].values,df_adm2.loc[:,'admin2Name_en'].values)
-    return adm2shortlist
+    adm2_shortlist = df_adm2[['admin2Pcode', 'admin2Name_en']].values
+    return adm2_shortlist
+
+
+def get_risk_df(df_risk_all: pd.DataFrame, admin2_name: str) -> pd.DataFrame:
+    df_risk = df_risk_all[df_risk_all['adm2'] == admin2_name].drop(columns=['adm2']).T.reset_index()
+    df_risk.columns = ['date', 'risk']
+    # TODO: NOT URGENT keep the date to look for the 4 months window. The risk date is the first day of the month
+    df_risk['date'] = df_risk['date'].dt.to_period('M')
+    return df_risk
 
 
 def get_detections(risk: array, threshold: float) -> array:
