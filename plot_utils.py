@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import geopandas as gpd
-import os
 
 import utils
 import matplotlib.patches as mpatches
@@ -10,11 +9,24 @@ PLOT_DIR = "plots"
 FILENAME_BOUNDARIES = 'zwe_admbnda_adm2_zimstat_ocha_20180911'
 
 
+def plot_adm2(df_risk, df_performance, real_outbreaks, admin2_pcode, admin2_name):
+    fig, axs = plt.subplots(2, 2,figsize=(25, 15))
+    # top left: map
+    plot_map(admin2_pcode, fig, ax=axs[0, 0])
+    # top right: risk
+    plot_risk(df_risk, real_outbreaks, axs[0, 1])
+    # bottom right: precision/recall
+    plot_confusion_matrix(df_performance, ax=axs[1, 0], scale_table_for_mosaic=True)
+    # bottom right: precision/recall
+    plot_performance(df_performance, ax=axs[1, 1])
+    fig.savefig(f'{PLOT_DIR}/{admin2_pcode}_{admin2_name}.png')
+    plt.close(fig)
+
+
 def plot_risk(df_risk, real_outbreaks, ax):
     # TODO:add date and not only the #month
     risk=df_risk['risk']
     detections = utils.get_detections(risk, RISK_THRESH)
-    # fig, ax = plt.subplots()
     ax.plot(risk,lw=3)
     ax.axhline(RISK_THRESH, c='gray',ls='--')
     for i, d in enumerate(detections):
@@ -32,18 +44,11 @@ def plot_risk(df_risk, real_outbreaks, ax):
     patch = mpatches.Patch(color='y', alpha=0.5, label='Detection window')
     handles.append(patch) 
     ax.legend(handles=handles, loc='upper center')
-    # ax.legend()
-    # fig.savefig(f'{PLOT_DIR}/risk_{admin2_pcode}.png')
-    # plt.close(fig)
 
 
-# def plot_f1(df, admin2_pcode,ax):
 def plot_performance(df, ax):
-    # fig, ax = plt.subplots()
-    df[['thresh', 'precision', 'recall']].plot(x='thresh', ax=ax)
+    df[['thresh', 'precision', 'recall', 'f1']].plot(x='thresh', ax=ax)
     ax.set_ylim(-0.05, 1.05)
-    # fig.savefig(f'{PLOT_DIR}/f1_{admin2_pcode}.png')
-    # plt.close(fig)
 
 
 def plot_map(admin2_pcode, fig, ax):
@@ -54,26 +59,13 @@ def plot_map(admin2_pcode, fig, ax):
     fig.suptitle('{} - {}'.format(adm2_boundary.iloc[0]['ADM1_EN'],adm2_boundary.iloc[0]['ADM2_EN']),fontsize=30)
 
 
-def plot_confusion_matrix(df, ax):
+def plot_confusion_matrix(df, ax, scale_table_for_mosaic=False):
     ax.axis('off')
-    df=df.loc[:,['thresh','TP','FP','FN']]
-    df['thresh']=df['thresh'].round(decimals=1)
-    the_table=ax.table(cellText=df.values, colLabels=df.columns, loc='center',rowLoc='center',colLoc='center')
+    df = df.loc[:, ['thresh', 'TP', 'FP', 'FN']]
+    df['thresh'] = df['thresh'].apply(lambda x: f'{x : 0.2f}')
+    df = df.astype({'TP': int, 'FP': int, 'FN': int})
+    the_table = ax.table(cellText=df.values, colLabels=df.columns, loc='center', rowLoc='center', colLoc='center')
     the_table.auto_set_font_size(False)
     the_table.set_fontsize(9)
-    the_table.scale(1.2,1.7)
-
-
-def plot_adm2(df_risk,df_performance, real_outbreaks, admin2_pcode,admin2_name):
-    fig, axs = plt.subplots(2,2,figsize=(25,15))
-    # top left: map
-    plot_map(admin2_pcode,fig,ax=axs[0,0])
-    # top right: risk
-    plot_risk(df_risk, real_outbreaks, axs[0,1])
-    # bottom right: precision/recall
-    plot_confusion_matrix(df_performance, ax=axs[1,0])
-    # bottom right: precision/recall
-    plot_performance(df_performance, ax=axs[1,1])
-    fig.savefig(f'{PLOT_DIR}/{admin2_pcode}_{admin2_name}.png')
-    plt.close(fig)
-    # plt.show()
+    if scale_table_for_mosaic:
+        the_table.scale(1.2, 1.7)

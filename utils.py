@@ -6,8 +6,17 @@ import pandas as pd
 # How much earlier a detection can be with respect to a real outbreak
 DETECTION_THRESH = 4  # months
 RISK_THRESH = 0.5     # value for the example and the overall evaluation
+THRESHOLD_STEP = 0.05
 
 FILENAME_OUTBREAKS = 'List of Admin Units.xlsx'
+
+
+def get_df_performance_all(threshold_step: float = THRESHOLD_STEP) -> pd.DataFrame:
+    df_risk_all = pd.DataFrame({
+        'thresh': np.arange(0, 1 + threshold_step, threshold_step),
+        'TP': 0, 'FP': 0, 'FN': 0
+    })
+    return df_risk_all
 
 
 def generate_fake_risk(rs: np.random.RandomState, start_date: str, end_date: str, p0: float = 0.5) -> pd.DataFrame:
@@ -102,7 +111,7 @@ def validate_detections(detections: array, real_outbreaks: array) -> pd.DataFram
     return df[['TP', 'FP', 'FN']].apply(sum)
 
 
-def loop_over_thresholds(risk: array, real_outbreaks: array, threshold_step: float = 0.05) -> pd.DataFrame:
+def loop_over_thresholds(risk: array, real_outbreaks: array, threshold_step: float = THRESHOLD_STEP) -> pd.DataFrame:
     """
     For a given threshold step, loop over thresholds from 0 to 1 and calculate TP, FP and FN
     :param risk: array of risk over time
@@ -133,7 +142,7 @@ def calculate_f1(df: pd.DataFrame) -> pd.DataFrame:
 
     # Only calc F1 if precision and recall are > 0 to avoid division by 0 error
     idx = (df['precision'] > 0) & (df['recall'] > 0)
-    # df.loc[idx, 'f1'] = df[idx].apply(lambda x: 2 / (1 / x['precision'] + 1 / x['recall']), axis=1)
+    df.loc[idx, 'f1'] = df[idx].apply(lambda x: 2 / (1 / x['precision'] + 1 / x['recall']), axis=1)
 
     # Put nans back to 0
     return df.fillna(0)
