@@ -15,10 +15,12 @@ def main():
     # rs = np.random.RandomState(SEED)
     # Get the outbreaks, and loop through the
     df_outbreaks = utils.get_outbreaks()
+    df_shocks = utils.get_shocks()
     df_risk_all = pd.read_excel(f'input/{FILENAME_ZIMBABWE}')
     df_performance_all = utils.get_df_performance_all()
     for admin2_pcode, admin2_name in utils.get_adm2_shortlist():
         df_outbreak = df_outbreaks[df_outbreaks['admin2Pcode'] == admin2_pcode]
+        df_shocks = df_shocks[df_shocks['district'] == admin2_name]
         # Go to next pcode if not in Zimbabwe
         if admin2_name not in list(df_risk_all['adm2']):
             continue

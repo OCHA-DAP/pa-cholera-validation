@@ -1,4 +1,6 @@
 import array
+import datetime
+import collections
 
 import numpy as np
 import pandas as pd
@@ -8,7 +10,13 @@ DETECTION_THRESH = 4  # months
 RISK_THRESH = 0.5     # value for the example and the overall evaluation
 THRESHOLD_STEP = 0.05
 
+
 FILENAME_OUTBREAKS = 'List of Admin Units.xlsx'
+SHEET_NAME_SHORTLIST = 'Proposed Shortlist'
+
+FILENAME_SHOCKS = 'cholera_shocks.xlsx'
+SHEET_NAME_SHOCKS = 'zimbabwe_emdat'
+SHEET_NAME_ADM2 = 'ADM2_Zimbabwe'
 
 
 def get_df_performance_all(threshold_step: float = THRESHOLD_STEP) -> pd.DataFrame:
@@ -50,13 +58,60 @@ def get_outbreaks(sheet_name: str = 'Outbreaks_Zimbabwe') -> pd.DataFrame:
     return df_outbreaks
 
 
-def get_adm2_shortlist(sheet_name: str = 'Proposed Shortlist') -> array:
+def get_shocks() -> pd.DataFrame:
+    # Read in the shocks and admin 2 to admin 1 region mapping
+    df_shocks_input = pd.read_excel(f'input/{FILENAME_SHOCKS}', sheet_name=SHEET_NAME_SHOCKS)
+    df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=SHEET_NAME_ADM2)
+    # Clean shocks input
+    clist = ['Start Year', 'Start Month', 'Start Day', 'End Year', 'End Month', 'End Day']
+    df_shocks_input[clist] = df_shocks_input[clist].fillna(-1).astype(int).replace(-1, None)
+    df_shocks_input[['admin1', 'admin2']] = (df_shocks_input[['admin1', 'admin2']]
+                                             .fillna('')
+                                             .applymap(lambda x: x.split(',')))
+    # Turn df_adm2 into dictionary
+    adm2_dict = df_adm2.groupby('admin1Name_en')['admin2Name_en'].apply(list).to_dict()
+    # Make an empty shocks table
+    df_shocks = pd.DataFrame(columns=['date_start', 'date_end', 'district', 'event', 'details' ])
+    for _, row in df_shocks_input.iterrows():
+        new_row = {
+            'event': row['Disaster Type'],
+            'details': row['Disaster Subtype'],
+            'date_start': datetime.datetime(
+                row['Start Year'],
+                row['Start Month'],
+                row['Start Day'] if row['Start Day'] != -1 else 1), 'date_end': (datetime.datetime(
+                row['End Year'],
+                row['End Month'],
+                row['End Day'] if row['End Day'] != -1 else 1)
+                if row['End Month'] != -1 else None)
+        }
+        # Get the districts
+        districts = [admin2 for admin2 in row['admin2'] if admin2 != '']
+        districts += [adm2_dict[admin1.strip()] for admin1 in row['admin1'] if admin1 != '']
+        districts = flatten(districts)
+        # Loop through each district and add to shock
+        for district in districts:
+            df_shocks = df_shocks.append(dict(new_row, **{'district': district}), ignore_index=True)
+    return df_shocks
+
+
+def flatten(x: list) -> list:
+    result = []
+    for el in x:
+        if isinstance(x, collections.Iterable) and not isinstance(el, str):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
+
+
+def get_adm2_shortlist() -> array:
     """
     Get shortlist of admin 2 regions for cholera outbreaks
     :param sheet_name: The name of the sheet in the excel file
     :return: array with [[admin2 pcode, admin2 english name]]
     """
-    df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=sheet_name)
+    df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=SHEET_NAME_SHORTLIST)
     adm2_shortlist = df_adm2[['admin2Pcode', 'admin2Name_en']].values
     return adm2_shortlist
 
