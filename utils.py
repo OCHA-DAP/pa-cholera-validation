@@ -9,7 +9,8 @@ import pandas as pd
 DETECTION_THRESH = 4  # months
 RISK_THRESH = 0.5     # value for the example and the overall evaluation
 THRESHOLD_STEP = 0.05
-
+# Window for non-zero risk after shock
+SHOCK_WINDOW = 6
 
 FILENAME_OUTBREAKS = 'List of Admin Units.xlsx'
 SHEET_NAME_SHORTLIST = 'Proposed Shortlist'
@@ -58,7 +59,7 @@ def get_outbreaks(sheet_name: str = 'Outbreaks_Zimbabwe') -> pd.DataFrame:
     return df_outbreaks
 
 
-def get_shocks() -> pd.DataFrame:
+def get_shocks_data() -> pd.DataFrame:
     # Read in the shocks and admin 2 to admin 1 region mapping
     df_shocks_input = pd.read_excel(f'input/{FILENAME_SHOCKS}', sheet_name=SHEET_NAME_SHOCKS)
     df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=SHEET_NAME_ADM2)
@@ -70,8 +71,9 @@ def get_shocks() -> pd.DataFrame:
                                              .applymap(lambda x: x.split(',')))
     # Turn df_adm2 into dictionary
     adm2_dict = df_adm2.groupby('admin1Name_en')['admin2Name_en'].apply(list).to_dict()
+    adm2_pcode_dict = df_adm2.set_index('admin2Name_en')['admin2Pcode'].to_dict()
     # Make an empty shocks table
-    df_shocks = pd.DataFrame(columns=['date_start', 'date_end', 'district', 'event', 'details' ])
+    df_shocks = pd.DataFrame(columns=['date_start', 'date_end', 'district', 'pcode', 'event', 'details' ])
     for _, row in df_shocks_input.iterrows():
         new_row = {
             'event': row['Disaster Type'],
@@ -79,26 +81,33 @@ def get_shocks() -> pd.DataFrame:
             'date_start': datetime.datetime(
                 row['Start Year'],
                 row['Start Month'],
-                row['Start Day'] if row['Start Day'] != -1 else 1), 'date_end': (datetime.datetime(
+                row['Start Day'] if row['Start Day'] != -1 else 1),
+            'date_end': (datetime.datetime(
                 row['End Year'],
                 row['End Month'],
                 row['End Day'] if row['End Day'] != -1 else 1)
                 if row['End Month'] != -1 else None)
         }
         # Get the districts
-        districts = [admin2 for admin2 in row['admin2'] if admin2 != '']
+        districts = [admin2.strip() for admin2 in row['admin2'] if admin2 != '']
         districts += [adm2_dict[admin1.strip()] for admin1 in row['admin1'] if admin1 != '']
         districts = flatten(districts)
         # Loop through each district and add to shock
         for district in districts:
-            df_shocks = df_shocks.append(dict(new_row, **{'district': district}), ignore_index=True)
+            df_shocks = df_shocks.append(
+                dict(new_row, **{'district': district, 'pcode': adm2_pcode_dict[district]}), ignore_index=True)
+    # Create end date if doesn't exists
+    df_shocks['date_end'] = df_shocks.apply(lambda x: x['date_start'] if x['date_end'] is None else x['date_end'],
+                                            axis=1)
+    df_shocks['month_start'] = df_shocks['date_start'].dt.to_period('M')
+    df_shocks['month_end'] = df_shocks['date_end'].dt.to_period('M')
     return df_shocks
 
 
 def flatten(x: list) -> list:
     result = []
     for el in x:
-        if isinstance(x, collections.Iterable) and not isinstance(el, str):
+        if isinstance(el, collections.Iterable) and not isinstance(el, str):
             result.extend(flatten(el))
         else:
             result.append(el)
@@ -122,6 +131,16 @@ def get_risk_df(df_risk_all: pd.DataFrame, admin2_name: str) -> pd.DataFrame:
     # TODO: NOT URGENT keep the date to look for the 4 months window. The risk date is the first day of the month
     df_risk['date'] = df_risk['date'].dt.to_period('M')
     return df_risk
+
+
+def get_shocks(df_shock: pd.DataFrame, df_risk: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    df_risk['shocks'] = df_risk['date'].isin(df_shock['month_start'])
+    shocks = df_risk[df_risk['shocks']].index.values
+    # Use shocks to define risk window
+    shocks_with_window = flatten([list(np.arange(SHOCK_WINDOW + 1) + shock) for shock in shocks])
+    df_risk['shocks'] = df_risk.index.isin(shocks_with_window)
+    df_risk['risk'] = np.where(df_risk['shocks'], df_risk['risk'], 0)
+    return shocks, df_risk
 
 
 def get_detections(risk: array, threshold: float) -> array:
