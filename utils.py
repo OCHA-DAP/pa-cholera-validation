@@ -69,6 +69,7 @@ def get_shocks_data() -> pd.DataFrame:
     df_shocks['month_end'] = df_shocks['date_end'].dt.to_period('M')
     return df_shocks
 
+
 def get_shocks_emdat() -> pd.DataFrame:
     # Read in the shocks and admin 2 to admin 1 region mapping
     df_shocks_input = pd.read_excel(f'input/{FILENAME_SHOCKS}', sheet_name=SHEET_NAME_EMDAT)
