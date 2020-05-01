@@ -22,6 +22,12 @@ and unzip the contents to `input/zwe_admbnda_adm2_zimstat_ocha_20180911/`
 python main.py
 ```
 
+### GDACS
+* There is also a script for obtaining the GDCAS data. To run it, execute:
+```bash
+python get_gdacs_data.py
+```
+
 ## Misc
 * Jupyter notebooks are committed to the repo as markdown (.md) files, 
 so that only input cells are under version control. Notebooks and markdown 

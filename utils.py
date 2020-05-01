@@ -4,6 +4,7 @@ import collections
 
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 
 # How much earlier a detection can be with respect to a real outbreak
 DETECTION_THRESH = 4  # months
@@ -16,8 +17,11 @@ FILENAME_OUTBREAKS = 'List of Admin Units.xlsx'
 SHEET_NAME_SHORTLIST = 'Proposed Shortlist'
 
 FILENAME_SHOCKS = 'cholera_shocks.xlsx'
-SHEET_NAME_SHOCKS = 'zimbabwe_emdat'
+SHEET_NAME_EMDAT = 'zimbabwe_emdat'
+SHEET_NAME_GDACS = 'zimbabwe_gdacs'
 SHEET_NAME_ADM2 = 'ADM2_Zimbabwe'
+
+FILENAME_BOUNDARIES = 'zwe_admbnda_adm2_zimstat_ocha_20180911'
 
 
 def get_df_performance_all(threshold_step: float = THRESHOLD_STEP) -> pd.DataFrame:
@@ -60,8 +64,14 @@ def get_outbreaks(sheet_name: str = 'Outbreaks_Zimbabwe') -> pd.DataFrame:
 
 
 def get_shocks_data() -> pd.DataFrame:
+    df_shocks = pd.concat([get_shocks_emdat(), get_shocks_gdacs()])
+    df_shocks['month_start'] = df_shocks['date_start'].dt.to_period('M')
+    df_shocks['month_end'] = df_shocks['date_end'].dt.to_period('M')
+    return df_shocks
+
+def get_shocks_emdat() -> pd.DataFrame:
     # Read in the shocks and admin 2 to admin 1 region mapping
-    df_shocks_input = pd.read_excel(f'input/{FILENAME_SHOCKS}', sheet_name=SHEET_NAME_SHOCKS)
+    df_shocks_input = pd.read_excel(f'input/{FILENAME_SHOCKS}', sheet_name=SHEET_NAME_EMDAT)
     df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=SHEET_NAME_ADM2)
     # Clean shocks input
     clist = ['Start Year', 'Start Month', 'Start Day', 'End Year', 'End Month', 'End Day']
@@ -99,9 +109,24 @@ def get_shocks_data() -> pd.DataFrame:
     # Create end date if doesn't exists
     df_shocks['date_end'] = df_shocks.apply(lambda x: x['date_start'] if x['date_end'] is None else x['date_end'],
                                             axis=1)
-    df_shocks['month_start'] = df_shocks['date_start'].dt.to_period('M')
-    df_shocks['month_end'] = df_shocks['date_end'].dt.to_period('M')
     return df_shocks
+
+
+def get_shocks_gdacs() -> pd.DataFrame:
+    df_shocks = pd.read_excel(f'input/{FILENAME_SHOCKS}', sheet_name=SHEET_NAME_GDACS)
+    df_shocks = gpd.GeoDataFrame(df_shocks, geometry=gpd.points_from_xy(df_shocks._x, df_shocks._y))
+    df_boundaries = get_boundaries_data()
+    df_shocks['pcode'] = df_shocks['geometry'].apply(lambda x:
+        [y['ADM2_PCODE'] for _, y in df_boundaries.iterrows() if y['geometry'].contains(x)][0])
+    df_shocks = df_shocks.rename({'gdacs_fromdate': 'date_start',
+                                  'gdacs_todate': 'date_end',
+                                  'gdacs_eventtype': 'event',
+                                  'Title': 'details'})
+    return df_shocks
+
+
+def get_boundaries_data() -> pd.DataFrame:
+    return gpd.read_file(f'input/{FILENAME_BOUNDARIES}/{FILENAME_BOUNDARIES}.shp')
 
 
 def flatten(x: list) -> list:

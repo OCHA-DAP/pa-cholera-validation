@@ -6,7 +6,6 @@ import matplotlib.patches as mpatches
 from utils import DETECTION_THRESH, RISK_THRESH
 
 PLOT_DIR = "plots"
-FILENAME_BOUNDARIES = 'zwe_admbnda_adm2_zimstat_ocha_20180911'
 
 
 def plot_adm2(df_risk, df_performance, real_outbreaks, shocks, admin2_pcode, admin2_name):
@@ -54,7 +53,7 @@ def plot_performance(df, ax):
 
 
 def plot_map(admin2_pcode, fig, ax):
-    zwe_boundaries=gpd.read_file(f'input/{FILENAME_BOUNDARIES}/{FILENAME_BOUNDARIES}.shp')
+    zwe_boundaries = utils.get_boundaries_data()
     zwe_boundaries.boundary.plot(ax=ax)
     adm2_boundary=zwe_boundaries[zwe_boundaries['ADM2_PCODE']==admin2_pcode]
     adm2_boundary.plot(ax=ax,color='red')
