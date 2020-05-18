@@ -8,7 +8,7 @@ SEED = 12345
 START_DATE = '2008-01'
 END_DATE = '2020-01'
 
-FILENAME_ZIMBABWE = 'zimbabwe_final.xlsx'
+FILENAME_ZIMBABWE = '01_zim_original-1.xlsx'
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
     # Get the outbreaks, and loop through the
     df_outbreaks = utils.get_outbreaks()
     df_shocks = utils.get_shocks_data()
-    df_risk_all = pd.read_excel(f'input/{FILENAME_ZIMBABWE}')
+    df_risk_all = pd.read_excel(f'input/risk/{FILENAME_ZIMBABWE}')
     df_performance_all = utils.get_df_performance_all()
     for admin2_pcode, admin2_name in utils.get_adm2_shortlist():
         # Go to next pcode if not in Zimbabwe

@@ -11,7 +11,7 @@ DETECTION_THRESH = 4  # months
 RISK_THRESH = 0.5     # value for the example and the overall evaluation
 THRESHOLD_STEP = 0.05
 # Window for non-zero risk after shock
-SHOCK_WINDOW = 6
+SHOCK_WINDOW = 4
 
 FILENAME_OUTBREAKS = 'List of Admin Units.xlsx'
 SHEET_NAME_SHORTLIST = 'Proposed Shortlist'
