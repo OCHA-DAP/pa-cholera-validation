@@ -6,15 +6,14 @@ import matplotlib.patches as mpatches
 from utils import DETECTION_THRESH, RISK_THRESH
 
 PLOT_DIR = "plots"
-FILENAME_BOUNDARIES = 'zwe_admbnda_adm2_zimstat_ocha_20180911'
 
 
-def plot_adm2(df_risk, df_performance, real_outbreaks, admin2_pcode, admin2_name):
+def plot_adm2(df_risk, df_performance, real_outbreaks, shocks, admin2_pcode, admin2_name):
     fig, axs = plt.subplots(2, 2,figsize=(25, 15))
     # top left: map
     plot_map(admin2_pcode, fig, ax=axs[0, 0])
     # top right: risk
-    plot_risk(df_risk, real_outbreaks, axs[0, 1])
+    plot_risk(df_risk, real_outbreaks, shocks, axs[0, 1])
     # bottom right: precision/recall
     plot_confusion_matrix(df_performance, ax=axs[1, 0], scale_table_for_mosaic=True)
     # bottom right: precision/recall
@@ -23,20 +22,22 @@ def plot_adm2(df_risk, df_performance, real_outbreaks, admin2_pcode, admin2_name
     plt.close(fig)
 
 
-def plot_risk(df_risk, real_outbreaks, ax):
+def plot_risk(df_risk, real_outbreaks, shocks, ax):
     # TODO:add date and not only the #month
-    risk=df_risk['risk']
+    risk = df_risk['risk']
     detections = utils.get_detections(risk, RISK_THRESH)
-    ax.plot(risk,lw=3)
-    ax.axhline(RISK_THRESH, c='gray',ls='--')
+    ax.plot(risk, lw=3)
+    ax.axhline(RISK_THRESH, c='gray', ls='--')
     for i, d in enumerate(detections):
         ax.axvline(x=d, lw=2, alpha=0.5, c='y', label="detections" if i == 0 else None)
         try:
-            ax.fill_between(range(d,d+DETECTION_THRESH),risk[d:d+DETECTION_THRESH],alpha=0.5, color='y')
+            ax.fill_between(range(d, d+DETECTION_THRESH), risk[d:d+DETECTION_THRESH], alpha=0.5, color='y')
         except:
-            ax.fill_between(range(d,len(risk)),risk[d:len(risk)],alpha=0.5, color='y')
+            ax.fill_between(range(d, len(risk)), risk[d:len(risk)], alpha=0.5, color='y')
     for i, r in enumerate(real_outbreaks):
         ax.axvline(x=r, c='r', label="outbreaks" if i == 0 else None)
+    for i, s in enumerate(shocks):
+        ax.axvline(x=s, c='g', label="shocks" if i == 0 else None)
     ax.set_ylabel('risk')
     ax.set_xlabel('month')
     ax.set_ylim(0, 1)
@@ -52,7 +53,7 @@ def plot_performance(df, ax):
 
 
 def plot_map(admin2_pcode, fig, ax):
-    zwe_boundaries=gpd.read_file(f'input/{FILENAME_BOUNDARIES}/{FILENAME_BOUNDARIES}.shp')
+    zwe_boundaries = utils.get_boundaries_data()
     zwe_boundaries.boundary.plot(ax=ax)
     adm2_boundary=zwe_boundaries[zwe_boundaries['ADM2_PCODE']==admin2_pcode]
     adm2_boundary.plot(ax=ax,color='red')

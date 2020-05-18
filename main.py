@@ -15,14 +15,16 @@ def main():
     # rs = np.random.RandomState(SEED)
     # Get the outbreaks, and loop through the
     df_outbreaks = utils.get_outbreaks()
+    df_shocks = utils.get_shocks_data()
     df_risk_all = pd.read_excel(f'input/{FILENAME_ZIMBABWE}')
     df_performance_all = utils.get_df_performance_all()
     for admin2_pcode, admin2_name in utils.get_adm2_shortlist():
-        df_outbreak = df_outbreaks[df_outbreaks['admin2Pcode'] == admin2_pcode]
         # Go to next pcode if not in Zimbabwe
         if admin2_name not in list(df_risk_all['adm2']):
             continue
         print(f'Analyzing admin region {admin2_name}')
+        df_outbreak = df_outbreaks[df_outbreaks['admin2Pcode'] == admin2_pcode]
+        df_shock = df_shocks[df_shocks['pcode'] == admin2_pcode]
         # Make the fake data
         # df_risk = utils.generate_fake_risk(rs, START_DATE, END_DATE)
         # Get risk from Zimbabwe data
@@ -30,6 +32,8 @@ def main():
         # Get outbreak date indices
         df_risk['outbreak'] = df_risk['date'].isin(df_outbreak['Outbreak month'])
         real_outbreaks = df_risk[df_risk['outbreak']].index.values
+        # Get shocks
+        shocks, df_risk = utils.get_shocks(df_shock, df_risk)
         # Get detections per threshold
         df_performance = utils.loop_over_thresholds(df_risk['risk'], real_outbreaks)
         df_performance = utils.calculate_f1(df_performance)
@@ -39,7 +43,7 @@ def main():
                               .sum()
                               .reset_index())
         # Make plots
-        plot_utils.plot_adm2(df_risk, df_performance, real_outbreaks, admin2_pcode, admin2_name)
+        plot_utils.plot_adm2(df_risk, df_performance, real_outbreaks, shocks, admin2_pcode, admin2_name)
         # TODO: evaluate the best threshold value and calculate the overall value of precision and recall
     df_performance_all = utils.calculate_f1(df_performance_all)
     # Confusion matrix
