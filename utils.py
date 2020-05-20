@@ -118,11 +118,23 @@ def get_shocks_gdacs() -> pd.DataFrame:
     df_shocks = gpd.GeoDataFrame(df_shocks, geometry=gpd.points_from_xy(df_shocks._x, df_shocks._y))
     df_boundaries = get_boundaries_data()
     df_shocks['pcode'] = df_shocks['geometry'].apply(lambda x:
-        [y['ADM2_PCODE'] for _, y in df_boundaries.iterrows() if y['geometry'].contains(x)][0])
+        [y['ADM2_PCODE'] for _, y in df_boundaries.iterrows() if y['geometry'].contains(x)])
+    df_shocks['pcode'] = df_shocks['pcode'].apply(lambda x: x[0] if len(x) else None)
     df_shocks = df_shocks.rename({'gdacs_fromdate': 'date_start',
                                   'gdacs_todate': 'date_end',
                                   'gdacs_eventtype': 'event',
                                   'Title': 'details'})
+    # For shocks with no Pcode (i.e. main location was outside of country),
+    # add to full country
+    df_to_add = pd.DataFrame()
+    df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=SHEET_NAME_ADM2)
+    print('Adding GDACS shocks to all regions...')
+    for _, row in df_shocks.iterrows():
+        if row['pcode'] is None:
+            for pcode in df_adm2['admin2Pcode']:
+                row['pcode'] = pcode
+                df_to_add = df_to_add.append(row)
+    print('...done')
     return df_shocks
 
 
