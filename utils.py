@@ -110,6 +110,7 @@ def get_shocks_emdat() -> pd.DataFrame:
     # Create end date if doesn't exists
     df_shocks['date_end'] = df_shocks.apply(lambda x: x['date_start'] if x['date_end'] is None else x['date_end'],
                                             axis=1)
+    df_shocks['source'] = 'emdat'
     return df_shocks
 
 
@@ -120,10 +121,10 @@ def get_shocks_gdacs() -> pd.DataFrame:
     df_shocks['pcode'] = df_shocks['geometry'].apply(lambda x:
         [y['ADM2_PCODE'] for _, y in df_boundaries.iterrows() if y['geometry'].contains(x)])
     df_shocks['pcode'] = df_shocks['pcode'].apply(lambda x: x[0] if len(x) else None)
-    df_shocks = df_shocks.rename({'gdacs_fromdate': 'date_start',
-                                  'gdacs_todate': 'date_end',
-                                  'gdacs_eventtype': 'event',
-                                  'Title': 'details'})
+    df_shocks = df_shocks.rename(columns={'gdacs_fromdate': 'date_start',
+                                          'gdacs_todate': 'date_end',
+                                          'gdacs_eventtype': 'event',
+                                          'Title': 'details'})
     # For shocks with no Pcode (i.e. main location was outside of country),
     # add to full country
     df_to_add = pd.DataFrame()
@@ -135,6 +136,8 @@ def get_shocks_gdacs() -> pd.DataFrame:
                 row['pcode'] = pcode
                 df_to_add = df_to_add.append(row)
     print('...done')
+    df_shocks = df_shocks.append(df_to_add)
+    df_shocks['source'] = 'gdacs'
     return df_shocks
 
 
@@ -152,14 +155,14 @@ def flatten(x: list) -> list:
     return result
 
 
-def get_adm2_shortlist() -> array:
+def get_adm2_shortlist(df_risk_all) -> array:
     """
     Get shortlist of admin 2 regions for cholera outbreaks
-    :param sheet_name: The name of the sheet in the excel file
     :return: array with [[admin2 pcode, admin2 english name]]
     """
     df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=SHEET_NAME_SHORTLIST)
     adm2_shortlist = df_adm2[['admin2Pcode', 'admin2Name_en']].values
+    adm2_shortlist = [[a[0], a[1]] for a in adm2_shortlist if a[1] in list(df_risk_all['adm2'])]
     return adm2_shortlist
 
 

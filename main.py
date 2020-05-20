@@ -18,10 +18,11 @@ def main():
     df_shocks = utils.get_shocks_data()
     df_risk_all = pd.read_excel(f'input/risk/{FILENAME_ZIMBABWE}')
     df_performance_all = utils.get_df_performance_all()
-    for admin2_pcode, admin2_name in utils.get_adm2_shortlist():
-        # Go to next pcode if not in Zimbabwe
-        if admin2_name not in list(df_risk_all['adm2']):
-            continue
+    # Get adm2 present in risks file
+    adm2_shortlist = utils.get_adm2_shortlist(df_risk_all)
+    # Plot for outbreaks and shocks
+    fig, axs = plt.subplots(len(adm2_shortlist), 1, figsize=(10, 10))
+    for iadm2, (admin2_pcode, admin2_name) in enumerate(adm2_shortlist):
         print(f'Analyzing admin region {admin2_name}')
         df_outbreak = df_outbreaks[df_outbreaks['admin2Pcode'] == admin2_pcode]
         df_shock = df_shocks[df_shocks['pcode'] == admin2_pcode]
@@ -44,7 +45,14 @@ def main():
                               .reset_index())
         # Make plots
         plot_utils.plot_adm2(df_risk, df_performance, real_outbreaks, shocks, admin2_pcode, admin2_name)
+        # Plot shocks / outbreaks
+        plot_utils.plot_shocks_and_outbreaks(axs[iadm2], real_outbreaks, shocks, admin2_name, df_risk,
+                                             show_x_axis=(iadm2 == len(adm2_shortlist) - 1))
         # TODO: evaluate the best threshold value and calculate the overall value of precision and recall
+    # Save the shocks / outbreaks figure
+    fig.savefig('plots/outbreaks_shocks.png')
+    plt.close(fig)
+    # Caclulate overall performance
     df_performance_all = utils.calculate_f1(df_performance_all)
     # Confusion matrix
     fig, ax = plt.subplots()

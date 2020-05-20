@@ -47,6 +47,24 @@ def plot_risk(df_risk, real_outbreaks, shocks, ax):
     ax.legend(handles=handles, loc='upper center')
 
 
+def plot_shocks_and_outbreaks(ax, real_outbreaks, shocks, admin2_name, df_risk,
+                              show_x_axis=False):
+    for i, r in enumerate(real_outbreaks):
+        ax.axvline(x=r, c='r', lw=2)
+    for i, s in enumerate(shocks):
+        ax.axvline(x=s, c='g', lw=2)
+        ax.fill_between(x=(s, s + 4), y1=0, y2=1, facecolor='g', alpha=0.2)
+    ax.set_ylim(0, 1)
+    ax.set_xlim(0, len(df_risk['risk']))
+    ax.minorticks_on()
+    ax.set_yticks([])
+    if show_x_axis:
+        ax.set_xlabel('Month number')
+    else:
+        ax.set_xticklabels([])
+    ax.text(1, 0.5, admin2_name)
+
+
 def plot_performance(df, ax):
     df[['thresh', 'precision', 'recall', 'f1']].plot(x='thresh', ax=ax)
     ax.set_ylim(-0.05, 1.05)
