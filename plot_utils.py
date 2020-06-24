@@ -37,7 +37,7 @@ def plot_risk(df_risk, real_outbreaks, shocks, ax):
     for i, r in enumerate(real_outbreaks):
         ax.axvline(x=r, c='r', label="outbreaks" if i == 0 else None)
     for i, s in enumerate(shocks):
-        ax.axvline(x=s, c='g', label="shocks" if i == 0 else None)
+        ax.axvline(x=s[0], c='g', label="shocks" if i == 0 else None)
     ax.set_ylabel('risk')
     ax.set_xlabel('month')
     ax.set_ylim(0, 1)
@@ -52,8 +52,8 @@ def plot_shocks_and_outbreaks(ax, real_outbreaks, shocks, admin2_name, df_risk,
     for i, r in enumerate(real_outbreaks):
         ax.axvline(x=r, c='r', lw=2)
     for i, s in enumerate(shocks):
-        ax.axvline(x=s, c='g', lw=2)
-        ax.fill_between(x=(s, s + 4), y1=0, y2=1, facecolor='g', alpha=0.2)
+        ax.axvline(x=s[0], c='g', lw=2)
+        ax.fill_between(x=(s[0], s[1]), y1=0, y2=1, facecolor='g', alpha=0.2)
     ax.set_ylim(0, 1)
     ax.set_xlim(0, len(df_risk['risk']))
     ax.minorticks_on()
@@ -67,7 +67,7 @@ def plot_shocks_and_outbreaks(ax, real_outbreaks, shocks, admin2_name, df_risk,
 
 def plot_performance(df, ax):
     df[['thresh', 'precision', 'recall', 'f1']].plot(x='thresh', ax=ax)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(0.0, 1.05)
 
 
 def plot_map(admin2_pcode, fig, ax):

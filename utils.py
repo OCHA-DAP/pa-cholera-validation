@@ -19,6 +19,7 @@ SHEET_NAME_SHORTLIST = 'Proposed Shortlist'
 FILENAME_SHOCKS = 'cholera_shocks.xlsx'
 SHEET_NAME_EMDAT = 'zimbabwe_emdat'
 SHEET_NAME_GDACS = 'zimbabwe_gdacs'
+SHEET_NAME_FLORIDA = 'florida'
 SHEET_NAME_ADM2 = 'ADM2_Zimbabwe'
 
 FILENAME_BOUNDARIES = 'zwe_admbnda_adm2_zimstat_ocha_20180911'
@@ -26,7 +27,7 @@ FILENAME_BOUNDARIES = 'zwe_admbnda_adm2_zimstat_ocha_20180911'
 
 def get_df_performance_all(threshold_step: float = THRESHOLD_STEP) -> pd.DataFrame:
     df_risk_all = pd.DataFrame({
-        'thresh': np.arange(0, 1 + threshold_step, threshold_step),
+        'thresh': np.arange(threshold_step, 1 + threshold_step, threshold_step),
         'TP': 0, 'FP': 0, 'FN': 0
     })
     return df_risk_all
@@ -63,10 +64,27 @@ def get_outbreaks(sheet_name: str = 'Outbreaks_Zimbabwe') -> pd.DataFrame:
     return df_outbreaks
 
 
-def get_shocks_data() -> pd.DataFrame:
-    df_shocks = pd.concat([get_shocks_emdat(), get_shocks_gdacs()])
+def get_shocks_data(use_florida_list=True) -> pd.DataFrame:
+    if use_florida_list:
+        df_shocks = get_shocks_florida()
+    else:
+        df_shocks = pd.concat([get_shocks_emdat(), get_shocks_gdacs()])
     df_shocks['month_start'] = df_shocks['date_start'].dt.to_period('M')
     df_shocks['month_end'] = df_shocks['date_end'].dt.to_period('M')
+    return df_shocks
+
+
+def get_shocks_florida() -> pd.DataFrame:
+    df_shocks_input = pd.read_excel(f'input/{FILENAME_SHOCKS}', sheet_name=SHEET_NAME_FLORIDA)
+    df_adm2 = pd.read_excel(f'input/{FILENAME_OUTBREAKS}', sheet_name=SHEET_NAME_ADM2)
+    df_shocks = pd.DataFrame()
+    print('Adding Florida shocks to all regions...')
+    for _, row in df_shocks_input.iterrows():
+        for pcode in df_adm2['admin2Pcode']:
+            row['pcode'] = pcode
+            df_shocks= df_shocks.append(row)
+    print('...done')
+    df_shocks['source'] = 'Florida'
     return df_shocks
 
 
@@ -175,13 +193,16 @@ def get_risk_df(df_risk_all: pd.DataFrame, admin2_name: str) -> pd.DataFrame:
 
 
 def get_shocks(df_shock: pd.DataFrame, df_risk: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
-    df_risk['shocks'] = df_risk['date'].isin(df_shock['month_start'])
-    shocks = df_risk[df_risk['shocks']].index.values
+    df_risk['shock_start'] = df_risk['date'].isin(df_shock['month_start'])
+    df_risk['shock_end'] = df_risk['date'].isin(df_shock['month_end'])
+    shocks_start = df_risk[df_risk['shock_start']].index.values
+    shocks_end = df_risk[df_risk['shock_end']].index.values + SHOCK_WINDOW
     # Use shocks to define risk window
-    shocks_with_window = flatten([list(np.arange(SHOCK_WINDOW + 1) + shock) for shock in shocks])
+    shocks_with_window = flatten([list(np.arange((shock_end-shock_start)+ 1) + shock_start)
+                                  for shock_start, shock_end in zip(shocks_start, shocks_end)])
     df_risk['shocks'] = df_risk.index.isin(shocks_with_window)
     df_risk['risk'] = np.where(df_risk['shocks'], df_risk['risk'], 0)
-    return shocks, df_risk
+    return np.array([shocks_start, shocks_end]).T, df_risk
 
 
 def get_detections(risk: array, threshold: float) -> array:
@@ -234,7 +255,7 @@ def loop_over_thresholds(risk: array, real_outbreaks: array, threshold_step: flo
     :param threshold_step: the threshold step size
     :return: DataFrame with TP, FP, and FN columns as a function of threshold
     """
-    df = pd.DataFrame({'thresh': np.arange(0, 1 + threshold_step, threshold_step)})
+    df = pd.DataFrame({'thresh': np.arange(threshold_step, 1 + threshold_step, threshold_step)})
     df[['TP', 'FP', 'FN']] = df.apply(
         lambda x: validate_detections(get_detections(risk, x['thresh']), real_outbreaks),
         axis=1,
