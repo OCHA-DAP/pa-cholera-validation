@@ -24,6 +24,8 @@ SHEET_NAME_ADM2 = 'ADM2_Zimbabwe'
 
 FILENAME_BOUNDARIES = 'zwe_admbnda_adm2_zimstat_ocha_20180911'
 
+pd.set_option('mode.chained_assignment', None)
+
 
 def get_df_performance_all(threshold_step: float = THRESHOLD_STEP) -> pd.DataFrame:
     df_risk_all = pd.DataFrame({
@@ -193,10 +195,11 @@ def get_risk_df(df_risk_all: pd.DataFrame, admin2_name: str) -> pd.DataFrame:
 
 
 def get_shocks(df_shock: pd.DataFrame, df_risk: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
-    df_risk['shock_start'] = df_risk['date'].isin(df_shock['month_start'])
-    df_risk['shock_end'] = df_risk['date'].isin(df_shock['month_end'])
-    shocks_start = df_risk[df_risk['shock_start']].index.values
-    shocks_end = df_risk[df_risk['shock_end']].index.values + SHOCK_WINDOW
+    min_date = df_risk['date'][0]
+    df_shock.loc[df_shock['month_start'] < df_risk['date'][0], 'month_start'] = min_date
+    df_shock.loc[df_shock['month_end'] < df_risk['date'][0], 'month_end'] = min_date
+    shocks_start = [df_risk[df_risk['date'] == m].index.values[0] for m in df_shock['month_start']]
+    shocks_end = [df_risk[df_risk['date'] == m].index.values[0] + SHOCK_WINDOW for m in df_shock['month_end']]
     # Use shocks to define risk window
     shocks_with_window = flatten([list(np.arange((shock_end-shock_start)+ 1) + shock_start)
                                   for shock_start, shock_end in zip(shocks_start, shocks_end)])

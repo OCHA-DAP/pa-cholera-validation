@@ -49,20 +49,21 @@ def plot_risk(df_risk, real_outbreaks, shocks, ax):
 
 def plot_shocks_and_outbreaks(ax, real_outbreaks, shocks, admin2_name, df_risk,
                               show_x_axis=False):
+    date = df_risk['date'].apply(lambda x: x.to_timestamp()).values
     for i, r in enumerate(real_outbreaks):
-        ax.axvline(x=r, c='r', lw=2)
+        ax.axvline(x=date[r], c='r', lw=2)
     for i, s in enumerate(shocks):
-        ax.axvline(x=s[0], c='g', lw=2)
-        ax.fill_between(x=(s[0], s[1]), y1=0, y2=1, facecolor='g', alpha=0.2)
-    ax.set_ylim(0, 1)
-    ax.set_xlim(0, len(df_risk['risk']))
+        ax.axvline(x=date[s[0]], c='g', lw=2)
+        ax.fill_between(x=(date[s[0]], date[s[1]]), y1=0, y2=1, facecolor='g', alpha=0.2)
+    ax.set_xlim(date[0], date[-1])
+    ax.set_ylim(0,1)
     ax.minorticks_on()
     ax.set_yticks([])
     if show_x_axis:
-        ax.set_xlabel('Month number')
+        ax.set_xlabel('Date')
     else:
         ax.set_xticklabels([])
-    ax.text(1, 0.5, admin2_name)
+    ax.text(date[1], 0.5, admin2_name)
 
 
 def plot_performance(df, ax):
