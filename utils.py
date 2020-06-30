@@ -66,7 +66,7 @@ def get_outbreaks(sheet_name: str = 'Outbreaks_Zimbabwe') -> pd.DataFrame:
     return df_outbreaks
 
 
-def get_shocks_data(use_florida_list=True) -> pd.DataFrame:
+def get_shocks_data(use_florida_list: bool = True) -> pd.DataFrame:
     if use_florida_list:
         df_shocks = get_shocks_florida()
     else:
@@ -194,12 +194,15 @@ def get_risk_df(df_risk_all: pd.DataFrame, admin2_name: str) -> pd.DataFrame:
     return df_risk
 
 
-def get_shocks(df_shock: pd.DataFrame, df_risk: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+def get_shocks(df_shock: pd.DataFrame, df_risk: pd.DataFrame, use_end_date: bool = False) -> (pd.DataFrame, pd.DataFrame):
     min_date = df_risk['date'][0]
     df_shock.loc[df_shock['month_start'] < df_risk['date'][0], 'month_start'] = min_date
     df_shock.loc[df_shock['month_end'] < df_risk['date'][0], 'month_end'] = min_date
     shocks_start = [df_risk[df_risk['date'] == m].index.values[0] for m in df_shock['month_start']]
-    shocks_end = [df_risk[df_risk['date'] == m].index.values[0] + SHOCK_WINDOW for m in df_shock['month_end']]
+    if use_end_date:
+        shocks_end = [df_risk[df_risk['date'] == m].index.values[0] + SHOCK_WINDOW for m in df_shock['month_end']]
+    else:
+        shocks_end = [s + SHOCK_WINDOW for s in shocks_start]
     # Use shocks to define risk window
     shocks_with_window = flatten([list(np.arange((shock_end-shock_start)+ 1) + shock_start)
                                   for shock_start, shock_end in zip(shocks_start, shocks_end)])

@@ -23,23 +23,25 @@ def plot_adm2(df_risk, df_performance, real_outbreaks, shocks, admin2_pcode, adm
 
 
 def plot_risk(df_risk, real_outbreaks, shocks, ax):
-    # TODO:add date and not only the #month
+    date = df_risk['date'].apply(lambda x: x.to_timestamp()).values
     risk = df_risk['risk']
     detections = utils.get_detections(risk, RISK_THRESH)
-    ax.plot(risk, lw=3)
+    ax.plot(date, risk, lw=3)
     ax.axhline(RISK_THRESH, c='gray', ls='--')
     for i, d in enumerate(detections):
-        ax.axvline(x=d, lw=2, alpha=0.5, c='y', label="detections" if i == 0 else None)
+        ax.axvline(x=date[d], lw=2, alpha=0.5, c='y', label="detections" if i == 0 else None)
         try:
-            ax.fill_between(range(d, d+DETECTION_THRESH), risk[d:d+DETECTION_THRESH], alpha=0.5, color='y')
+            ax.fill_between(x=date[d:d+DETECTION_THRESH+1], y1=0,
+                            y2=risk[d:d+DETECTION_THRESH+1], alpha=0.5, color='y')
         except:
-            ax.fill_between(range(d, len(risk)), risk[d:len(risk)], alpha=0.5, color='y')
+            ax.fill_between(x=date[d:], y1=0, y2=risk[d:], alpha=0.5, color='y')
     for i, r in enumerate(real_outbreaks):
-        ax.axvline(x=r, c='r', label="outbreaks" if i == 0 else None)
+        ax.axvline(x=date[r], c='r', label="outbreaks" if i == 0 else None)
     for i, s in enumerate(shocks):
-        ax.axvline(x=s[0], c='g', label="shocks" if i == 0 else None)
-    ax.set_ylabel('risk')
-    ax.set_xlabel('month')
+        ax.axvline(x=date[s[0]], c='g', label="shocks" if i == 0 else None)
+    ax.set_ylabel('Risk')
+    ax.set_xlabel('Date')
+    ax.minorticks_on()
     ax.set_ylim(0, 1)
     handles, _ = ax.get_legend_handles_labels()
     patch = mpatches.Patch(color='y', alpha=0.5, label='Detection window')
